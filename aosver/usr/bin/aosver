@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+# Kodların buradan aşağıda devam etmeli...
+import sys
+import platform
+import os
+import re
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
+                             QHBoxLayout, QLabel, QPushButton, QFrame)
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont, QPixmap
+
+# --- OS-RELEASE VERİSİNİ ÇEKME ---
+def get_os_version():
+    try:
+        if os.path.exists("/etc/os-release"):
+            with open("/etc/os-release", "r") as f:
+                content = f.read()
+                version = re.search(r'^VERSION_ID=["\']?([^"\']+)["\']?', content, re.M)
+                if not version:
+                    version = re.search(r'^VERSION=["\']?([^"\']+)["\']?', content, re.M)
+                return version.group(1) if version else "Unknown"
+    except:
+        pass
+    return "v28.1.0.0"
+
+OS_NAME = "ArchiveOS"
+EDITION = "Classic Edition"
+OS_VERSION = get_os_version()
+LOGO_PATH = os.path.join(os.path.dirname(__file__), "aosver-logo.png")
+
+class ArchiveAbout(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.lang = "TR"
+        self.init_ui()
+        self.update_texts()
+
+    def init_ui(self):
+        self.setFixedSize(600, 620)
+        self.setWindowTitle(OS_NAME)
+        self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.WindowCloseButtonHint)
+
+        self.setStyleSheet("""
+            QMainWindow { background-color: #0c0c0c; }
+            QWidget { background-color: #0c0c0c; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; }
+            QLabel { background-color: transparent; }
+            QFrame#line { background-color: #2a2a2a; }
+            QFrame#infoBox { background-color: #161616; border: 1px solid #2a2a2a; border-radius: 12px; }
+            QLabel#title { color: #3daee9; }
+        """)
+
+        central = QWidget()
+        self.setCentralWidget(central)
+        layout = QVBoxLayout(central)
+        layout.setContentsMargins(40, 40, 40, 40)
+
+        # Header
+        header = QHBoxLayout()
+        self.logo_lbl = QLabel()
+        if os.path.exists(LOGO_PATH):
+            pix = QPixmap(LOGO_PATH)
+            if not pix.isNull():
+                self.logo_lbl.setPixmap(pix.scaled(80, 80, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        else:
+            self.logo_lbl.setText("💠")
+            self.logo_lbl.setStyleSheet("font-size: 65px; margin-right: 15px;")
+
+        header.addWidget(self.logo_lbl)
+
+        t_vbox = QVBoxLayout()
+        self.lbl_os_name = QLabel(OS_NAME)
+        self.lbl_os_name.setObjectName("title")
+        self.lbl_os_name.setFont(QFont("Segoe UI", 36, QFont.Weight.Bold))
+        self.lbl_edition = QLabel(EDITION)
+        self.lbl_edition.setFont(QFont("Segoe UI", 14))
+        self.lbl_edition.setStyleSheet("color: #888888;")
+        t_vbox.addWidget(self.lbl_os_name)
+        t_vbox.addWidget(self.lbl_edition)
+        header.addLayout(t_vbox)
+        header.addStretch()
+        layout.addLayout(header)
+
+        line = QFrame(); line.setObjectName("line"); line.setFixedHeight(1)
+        layout.addSpacing(25); layout.addWidget(line); layout.addSpacing(25)
+
+        self.lbl_ver = QLabel()
+        self.lbl_legal = QLabel("© 2026 ArchiveOS Project")
+        layout.addWidget(self.lbl_ver)
+        layout.addWidget(self.lbl_legal)
+        layout.addSpacing(20)
+
+        # Info Box
+        info_box = QFrame(); info_box.setObjectName("infoBox"); info_box.setMinimumHeight(240)
+        i_layout = QVBoxLayout(info_box)
+        i_layout.setContentsMargins(25, 25, 25, 25)
+        self.l_header = QLabel()
+        self.l_header.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+        self.l_header.setStyleSheet("color: #3daee9;")
+        self.lbl_details = QLabel()
+        self.lbl_details.setFont(QFont("Segoe UI", 11))
+        self.lbl_details.setStyleSheet("color: #bbbbbb; line-height: 150%;")
+        i_layout.addWidget(self.l_header)
+        i_layout.addWidget(self.lbl_details)
+        i_layout.addStretch()
+        layout.addWidget(info_box)
+
+        # FOOTER YUKARI ALINDI
+        layout.addSpacing(15)
+        self.lbl_footer = QLabel()
+        self.lbl_footer.setStyleSheet("color: #666666; margin-left: 5px;")
+        self.lbl_footer.setFont(QFont("Segoe UI", 9))
+        layout.addWidget(self.lbl_footer)
+
+        # Esnek boşluk şimdi en altta, butonları aşağı itiyor
+        layout.addStretch()
+
+        # Buttons
+        b_layout = QHBoxLayout()
+        self.btn_lang = QPushButton("English / Türkçe")
+        self.btn_lang.setFixedSize(110, 30)
+        self.btn_lang.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_lang.setStyleSheet("QPushButton { background-color: #1a1a1a; color: #888; border-radius: 5px; font-size: 10px; } QPushButton:hover { color: white; border: 1px solid #333; }")
+        self.btn_lang.clicked.connect(self.toggle_language)
+
+        self.btn_ok = QPushButton()
+        self.btn_ok.setFixedSize(120, 40)
+        self.btn_ok.setStyleSheet("""
+            QPushButton { background-color: #222; color: white; border-radius: 8px; border: 1px solid #333; font-weight: bold; }
+            QPushButton:hover { background-color: #3daee9; color: black; }
+        """)
+        self.btn_ok.clicked.connect(self.close)
+
+        b_layout.addWidget(self.btn_lang)
+        b_layout.addStretch()
+        b_layout.addWidget(self.btn_ok)
+        layout.addLayout(b_layout)
+
+    def toggle_language(self):
+        self.lang = "EN" if self.lang == "TR" else "TR"
+        self.update_texts()
+
+    def update_texts(self):
+        try: user = os.getlogin()
+        except: user = os.environ.get('USER', 'User')
+
+        if self.lang == "TR":
+            self.lbl_ver.setText(f"<b>Sürüm:</b> {OS_VERSION}")
+            self.l_header.setText("Sistem Bilgileri")
+            self.lbl_details.setText(f"<b>Kullanıcı:</b> {user}<br><b>Lisans:</b> Beleş<br><b>Anahtar:</b> Gerekli Değil<br><br><b>Mimari:</b> {platform.machine()}<br><b>Çekirdek:</b> {platform.release()}")
+            self.lbl_footer.setText("ArchiveOS açık kaynaklı bir projedir; özgürce kullanılabilir.")
+            self.btn_ok.setText("Kapat")
+            self.setWindowTitle("Hakkında - ArchiveOS")
+        else:
+            self.lbl_ver.setText(f"<b>Version:</b> {OS_VERSION}")
+            self.l_header.setText("System Information")
+            self.lbl_details.setText(f"<b>User:</b> {user}<br><b>License:</b> Free<br><b>Key:</b> Not Required<br><br><b>Arch:</b> {platform.machine()}<br><b>Kernel:</b> {platform.release()}")
+            self.lbl_footer.setText("ArchiveOS is an open-source project; it can be used freely.")
+            self.btn_ok.setText("Close")
+            self.setWindowTitle("About - ArchiveOS")
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+    window = ArchiveAbout()
+    window.show()
+    sys.exit(app.exec())
